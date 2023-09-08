@@ -1,3 +1,0 @@
-{{#if (isAnyTrue (equalAny name 'is,in') (startWith name '_'))~}}
-{{trimPrefix (upperFirst name) '_'}}
-{{~else}}{{name}}{{/if}}

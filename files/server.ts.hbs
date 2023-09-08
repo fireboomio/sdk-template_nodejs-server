@@ -1,7 +1,7 @@
 {{#each serverObjectFieldArray}}
 export type {{upperFirst (joinString '_' documentPath)}} = {{#if fields}}{
   {{#each fields}}
-  {{>keywords_name name=name}}{{#unless required}}?{{/unless}}: {{#if typeRefObject~}}
+  {{name}}{{#unless required}}?{{/unless}}: {{#if typeRefObject~}}
     {{~upperFirst (joinString '_' typeRefObject.documentPath)~}}
   {{~else~}}
     {{~#if typeRefEnum~}}
@@ -12,9 +12,10 @@ export type {{upperFirst (joinString '_' documentPath)}} = {{#if fields}}{
     {{~#equal typeName 'boolean'}}boolean{{/equal~}}
     {{~#equal typeName ''}}any{{/equal~}}
     {{~/if}}
-  {{~/if}}
+  {{~/if}}{{#if isArray}}[]{{/if}}
   {{/each}}
-}{{else}}Record<string, any>{{/if}}
+}{{else}}Record<string, {{#if typeAdditionalRefObject}}{{~upperFirst (joinString '_' typeAdditionalRefObject.documentPath)~}}{{else}}any{{/if}}>{{/if}}
+
 {{/each}}
 
 {{#each serverEnumFieldArray}}
