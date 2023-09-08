@@ -1,0 +1,26 @@
+{{#each serverObjectFieldArray}}
+export type {{upperFirst (joinString '_' documentPath)}} = {{#if fields}}{
+  {{#each fields}}
+  {{>keywords_name name=name}}{{#unless required}}?{{/unless}}: {{#if typeRefObject~}}
+    {{~upperFirst (joinString '_' typeRefObject.documentPath)~}}
+  {{~else~}}
+    {{~#if typeRefEnum~}}
+    {{~upperFirst typeRefEnum.name~}}
+    {{~else~}}
+    {{~#equal typeName 'string'}}string{{/equal~}}
+    {{~#if (equalAny typeName 'integer,number')}}number{{/if~}}
+    {{~#equal typeName 'boolean'}}boolean{{/equal~}}
+    {{~#equal typeName ''}}any{{/equal~}}
+    {{~/if}}
+  {{~/if}}
+  {{/each}}
+}{{else}}Record<string, any>{{/if}}
+{{/each}}
+
+{{#each serverEnumFieldArray}}
+export enum {{upperFirst name}} {
+  {{#each values}}
+  {{upperFirst this}} = '{{this}}'{{#unless @last}},{{/unless}}
+  {{/each}}
+}
+{{/each}}
