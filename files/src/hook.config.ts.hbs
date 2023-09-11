@@ -1,0 +1,19 @@
+export type HookServerConfiguration = {
+  listen: {
+    host: string
+    port: number
+  }
+  logLevel: string
+  apiBaseURL: string
+  envFilePath: string
+}
+
+export const hookServerConfiguration: HookServerConfiguration = {
+  listen: {
+    host: '{{getVariableString serverOptions.listen.host}}',
+    port: {{getVariableString serverOptions.listen.port}}
+  },
+  logLevel: '{{getVariableString serverOptions.logger.level}}',
+  apiBaseURL: '{{internalBaseURL}}',
+  envFilePath: '{{nodeEnvFilepath}}'
+}
