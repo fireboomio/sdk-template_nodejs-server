@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
-import { BaseRequestBody, MiddlewareHookResponse, OnRequestHookPayload, OnResponseHookPayload, OperationHookPayload, OperationHookPayload_response, RequestHeaders, UploadHookPayload } from './types/server'
+import { BaseRequestBody, MiddlewareHookResponse, OnRequestHookPayload, OnRequestHookResponse, OnResponseHookPayload, OnResponseHookResponse, OperationHookPayload, OperationHookPayload_response, RequestHeaders, UploadHookPayload, UploadHookResponse } from './types/server'
 
 export interface GlobalHooksRouteConfig {
   kind: 'global-hook'
@@ -23,24 +23,31 @@ export interface UploadHooksRouteConfig {
 export type SKIP = 'skip'
 export type CANCEL = 'cancel'
 
+// make some key as partial
+export type PartialKey<T extends Record<string, any>, K extends keyof T> = Omit<T, K> & { [P in K]?: T[P] }
+// remove void type
+export type OmitVoid<T> = Pick<T, Exclude<keyof T, "void">>
+
 export type PromiseFunction = (...args: any) => Promise<any>
 export type AppendResponse<T extends PromiseFunction, Append> = (...args: Parameters<T>) => Promise<{ response: Awaited<ReturnType<T>> } & Append>
 export type HeaderMutableFunction<T extends PromiseFunction> = AppendResponse<T, { headers?: RequestHeaders }>
 export type InputMutableFunction<T extends PromiseFunction> = AppendResponse<T, { input?: MiddlewareHookResponse['input'] }>
-export type HeaderAndInputMutableFunction<T extends PromiseFunction> = AppendResponse<T, { headers?: RequestHeaders, input?: MiddlewareHookResponse['input'] }>
+
+export type MutatingPreResolveFunction<T extends PromiseFunction> = (...args: Parameters<T>) => Promise<OmitVoid<Awaited<ReturnType<T>>> & { headers?: RequestHeaders, input?: MiddlewareHookResponse['input'] }>
 
 export type VoidHookFunction = (ctx: FastifyRequest['ctx']) => Promise<void>
-export type WithResponseHookFunction<R = MiddlewareHookResponse['response']> = (ctx: FastifyRequest['ctx']) => Promise<R>
-export type GlobalHookFunction<R = MiddlewareHookResponse['response']> = (ctx: FastifyRequest['ctx'] & (OnRequestHookPayload | OnResponseHookPayload)) => Promise<R | SKIP | CANCEL>
-export type OperationHookFunction<I = OperationHookPayload['input'], R = MiddlewareHookResponse['response']> = (ctx: FastifyRequest['ctx'] & { input: I }) => Promise<R>
+export type CommonResponse = MiddlewareHookResponse['response']
+export type WithResponseHookFunction<R = CommonResponse> = (ctx: FastifyRequest['ctx']) => Promise<R>
+export type GlobalHookFunction<Payload, R = CommonResponse> = (ctx: FastifyRequest['ctx'] & Payload) => Promise<R | SKIP | CANCEL>
+export type OperationHookFunction<I = OperationHookPayload['input'], R = CommonResponse> = (ctx: FastifyRequest['ctx'] & { input: I }) => Promise<R>
 export type OperationWithoutResponseHookFunction<I = OperationHookPayload['input']> = (ctx: FastifyRequest['ctx'] & { input: I }) => Promise<void>
-export type OperationWithResponseHookFunction<I = OperationHookPayload['input'], R = MiddlewareHookResponse['response']> = (ctx: FastifyRequest['ctx'] & { input: I; response: OperationHookPayload_response }) => Promise<R>
+export type OperationWithResponseHookFunction<I = OperationHookPayload['input'], R = CommonResponse> = (ctx: FastifyRequest['ctx'] & { input: I; response: OperationHookPayload_response }) => Promise<R>
 
-export type PreUploadHookFunction<R = MiddlewareHookResponse['response']> = (ctx: FastifyRequest['ctx'] & Omit<UploadHookPayload, '__wg' | 'error'>) => Promise<R>
-export type PostUploadHookFunction<R = MiddlewareHookResponse['response']> = (ctx: FastifyRequest['ctx'] & Omit<UploadHookPayload, '__wg'>) => Promise<R>
+export type PreUploadHookFunction<Meta = any, R = CommonResponse> = (ctx: FastifyRequest['ctx'] & Omit<UploadHookPayload, '__wg' | 'error' | 'meta'> & { meta: Meta }) => Promise<R>
+export type PostUploadHookFunction<Meta = any, R = CommonResponse> = (ctx: FastifyRequest['ctx'] & Omit<UploadHookPayload, '__wg' | 'meta'> & { meta: Meta }) => Promise<R>
 
-export type FBHookResponse = Required<Pick<MiddlewareHookResponse, 'hook'> & { error: unknown }> | Partial<Pick<MiddlewareHookResponse, 'hook' | 'response' | 'op' | 'setClientRequestHeaders'>>
-export type FBFastifyInterface<B, R = FBHookResponse> = { Body: B, Reply: R }
+export type FBHookResponse<R = CommonResponse> = Required<Pick<MiddlewareHookResponse, 'hook'> & { error: unknown }> | Partial<Pick<MiddlewareHookResponse, 'hook' | 'op' | 'setClientRequestHeaders'> & { response: R }>
+export type FBFastifyRequest<B, R = CommonResponse> = { Body: B, Reply: FBHookResponse<R> }
 
 let fastify: FastifyInstance
 
@@ -54,7 +61,7 @@ function authenticationPreHandler(req: FastifyRequest, reply: FastifyReply): boo
 }
 
 export function registerPostAuthentication(fn: VoidHookFunction) {
-  fastify.post<FBFastifyInterface<BaseRequestBody>>(
+  fastify.post<FBFastifyRequest<BaseRequestBody>>(
     '/authentication/postAuthentication',
     { config: { kind: 'global-hook', category: 'authentication', hookName: 'postAuthentication' } },
     async (request, reply) => {
@@ -74,7 +81,7 @@ export function registerPostAuthentication(fn: VoidHookFunction) {
 }
 
 export function registerMutatingPostAuthentication(fn: HeaderMutableFunction<WithResponseHookFunction>) {
-  fastify.post<FBFastifyInterface<BaseRequestBody>, GlobalHooksRouteConfig>(
+  fastify.post<FBFastifyRequest<BaseRequestBody>, GlobalHooksRouteConfig>(
     '/authentication/mutatingPostAuthentication',
     { config: { kind: 'global-hook', category: 'authentication', hookName: 'mutatingPostAuthentication' } },
     async (request, reply) => {
@@ -96,7 +103,7 @@ export function registerMutatingPostAuthentication(fn: HeaderMutableFunction<Wit
 }
 
 export function registerRevalidate(fn: HeaderMutableFunction<WithResponseHookFunction>) {
-  fastify.post<FBFastifyInterface<BaseRequestBody>, GlobalHooksRouteConfig>(
+  fastify.post<FBFastifyRequest<BaseRequestBody>, GlobalHooksRouteConfig>(
     '/authentication/revalidateAuthentication',
     { config: { kind: 'global-hook', category: 'authentication', hookName: 'postLogout' } },
     async (request, reply) => {
@@ -118,7 +125,7 @@ export function registerRevalidate(fn: HeaderMutableFunction<WithResponseHookFun
 }
 
 export function registerPostLogout(fn: HeaderMutableFunction<WithResponseHookFunction>) {
-  fastify.post<FBFastifyInterface<BaseRequestBody>, GlobalHooksRouteConfig>(
+  fastify.post<FBFastifyRequest<BaseRequestBody>, GlobalHooksRouteConfig>(
     '/authentication/postLogout',
     { config: { kind: 'global-hook', category: 'authentication', hookName: 'postLogout' } },
     async (request, reply) => {
@@ -139,8 +146,8 @@ export function registerPostLogout(fn: HeaderMutableFunction<WithResponseHookFun
   )
 }
 
-export function registerBeforeOriginRequest(fn: GlobalHookFunction) {
-  fastify.post<FBFastifyInterface<OnRequestHookPayload>, GlobalHooksRouteConfig>(
+export function registerBeforeOriginRequest(fn: GlobalHookFunction<OnRequestHookPayload, OnRequestHookResponse['request']>) {
+  fastify.post<FBFastifyRequest<OnRequestHookPayload>, GlobalHooksRouteConfig>(
     '/global/httpTransport/beforeOriginRequest',
     { config: { kind: 'global-hook', category: 'httpTransport', hookName: 'beforeOriginRequest' } },
     async (request, reply) => {
@@ -166,8 +173,8 @@ export function registerBeforeOriginRequest(fn: GlobalHookFunction) {
   )
 }
 
-export function registerOnOriginRequest(fn: GlobalHookFunction) {
-  fastify.post<FBFastifyInterface<OnRequestHookPayload>, GlobalHooksRouteConfig>(
+export function registerOnOriginRequest(fn: GlobalHookFunction<OnRequestHookPayload, OnRequestHookResponse['request']>) {
+  fastify.post<FBFastifyRequest<OnRequestHookPayload>, GlobalHooksRouteConfig>(
     '/global/httpTransport/onOriginRequest',
     { config: { kind: 'global-hook', category: 'httpTransport', hookName: 'onOriginRequest' } },
     async (request, reply) => {
@@ -193,8 +200,8 @@ export function registerOnOriginRequest(fn: GlobalHookFunction) {
   )
 }
 
-export function registerOnOriginResponse(fn: GlobalHookFunction) {
-  fastify.post<FBFastifyInterface<OnResponseHookPayload>, GlobalHooksRouteConfig>(
+export function registerOnOriginResponse(fn: GlobalHookFunction<OnResponseHookPayload, OnResponseHookResponse['response']>) {
+  fastify.post<FBFastifyRequest<OnResponseHookPayload, PartialKey<OnResponseHookResponse, 'response'>>, GlobalHooksRouteConfig>(
     '/global/httpTransport/onOriginResponse',
     { config: { kind: 'global-hook', category: 'httpTransport', hookName: 'onOriginResponse' } },
     async (request, reply) => {
@@ -220,8 +227,8 @@ export function registerOnOriginResponse(fn: GlobalHookFunction) {
   )
 }
 
-export function registerMockResolve(operationName: string, fn: HeaderMutableFunction<OperationHookFunction>) {
-  fastify.post<FBFastifyInterface<OperationHookPayload>, HooksRouteConfig>(
+export function registerMockResolve<OperationInput extends OperationHookPayload['input'], OperationResponse>(operationName: string, fn: HeaderMutableFunction<OperationHookFunction<OperationInput, OperationResponse>>) {
+  fastify.post<FBFastifyRequest<OperationHookPayload>, HooksRouteConfig>(
     `/operation/${operationName}/mockResolve`,
     { config: { operationName, kind: 'hook', hookName: 'mockResolve' } },
     async (request, reply) => {
@@ -243,8 +250,8 @@ export function registerMockResolve(operationName: string, fn: HeaderMutableFunc
   )
 }
 
-export function registerPreResolve(operationName: string, fn: OperationHookFunction) {
-  fastify.post<FBFastifyInterface<OperationHookPayload>, HooksRouteConfig>(
+export function registerPreResolve<OperationInput extends OperationHookPayload['input'], OperationResponse>(operationName: string, fn: OperationHookFunction<OperationInput, OperationResponse>) {
+  fastify.post<FBFastifyRequest<OperationHookPayload>, HooksRouteConfig>(
     `/operation/${operationName}/preResolve`,
     { config: { operationName, kind: 'hook', hookName: 'preResolve' } },
     async (request, reply) => {
@@ -265,8 +272,8 @@ export function registerPreResolve(operationName: string, fn: OperationHookFunct
   )
 }
 
-export function registerPostResolve(operationName: string, fn: OperationWithResponseHookFunction) {
-  fastify.post<FBFastifyInterface<OperationHookPayload>, HooksRouteConfig>(
+export function registerPostResolve<OperationInput extends OperationHookPayload['input'], OperationResponse>(operationName: string, fn: OperationWithResponseHookFunction<OperationInput, OperationResponse>) {
+  fastify.post<FBFastifyRequest<OperationHookPayload>, HooksRouteConfig>(
     `/operation/${operationName}/postResolve`,
     { config: { operationName, kind: 'hook', hookName: 'postResolve' } },
     async (request, reply) => {
@@ -291,8 +298,8 @@ export function registerPostResolve(operationName: string, fn: OperationWithResp
   )
 }
 
-export function registerMutatingPreResolve(operationName: string, fn: HeaderAndInputMutableFunction<OperationWithoutResponseHookFunction>) {
-  fastify.post<FBFastifyInterface<OperationHookPayload>, HooksRouteConfig>(
+export function registerMutatingPreResolve<OperationInput extends OperationHookPayload['input']>(operationName: string, fn: MutatingPreResolveFunction<OperationWithoutResponseHookFunction<OperationInput>>) {
+  fastify.post<FBFastifyRequest<OperationHookPayload>, HooksRouteConfig>(
     `/operation/${operationName}/mutatingPreResolve`,
     { config: { operationName, kind: 'hook', hookName: 'mutatingPreResolve' } },
     async (request, reply) => {
@@ -314,8 +321,8 @@ export function registerMutatingPreResolve(operationName: string, fn: HeaderAndI
   )
 }
 
-export function registerMutatingPostResolve(operationName: string, fn: HeaderMutableFunction<OperationWithResponseHookFunction>) {
-  fastify.post<FBFastifyInterface<OperationHookPayload>, HooksRouteConfig>(
+export function registerMutatingPostResolve<OperationInput extends OperationHookPayload['input'], OperationResponse>(operationName: string, fn: HeaderMutableFunction<OperationWithResponseHookFunction<OperationInput, OperationResponse>>) {
+  fastify.post<FBFastifyRequest<OperationHookPayload>, HooksRouteConfig>(
     `/operation/${operationName}/mutatingPostResolve`,
     { config: { operationName, kind: 'hook', hookName: 'mutatingPostResolve' } },
     async (request, reply) => {
@@ -341,8 +348,8 @@ export function registerMutatingPostResolve(operationName: string, fn: HeaderMut
   )
 }
 
-export function registerCustomResolve(operationName: string, fn: HeaderMutableFunction<OperationHookFunction>) {
-  fastify.post<FBFastifyInterface<OperationHookPayload>, HooksRouteConfig>(
+export function registerCustomResolve<OperationInput extends OperationHookPayload['input'], OperationResponse>(operationName: string, fn: HeaderMutableFunction<OperationHookFunction<OperationInput, OperationResponse>>) {
+  fastify.post<FBFastifyRequest<OperationHookPayload>, HooksRouteConfig>(
     `/operation/${operationName}/customResolve`,
     { config: { operationName, kind: 'hook', hookName: 'customResolve' } },
     async (request, reply) => {
@@ -367,8 +374,8 @@ export function registerCustomResolve(operationName: string, fn: HeaderMutableFu
   )
 }
 
-export function registerPreUpload(providerName: string, profileName: string, fn: PreUploadHookFunction) {
-  fastify.post<FBFastifyInterface<UploadHookPayload>, UploadHooksRouteConfig>(
+export function registerPreUpload<Meta = any>(providerName: string, profileName: string, fn: PreUploadHookFunction<Meta, UploadHookResponse>) {
+  fastify.post<FBFastifyRequest<UploadHookPayload>, UploadHooksRouteConfig>(
     `/upload/${providerName}/${profileName}/preUpload`,
     { config: { kind: 'upload-hook', hookName: 'preUpload', profileName, providerName } },
     async (request, reply) => {
@@ -391,8 +398,8 @@ export function registerPreUpload(providerName: string, profileName: string, fn:
     })
 }
 
-export function registerPostUpload(providerName: string, profileName: string, fn: PostUploadHookFunction) {
-  fastify.post<FBFastifyInterface<UploadHookPayload>, UploadHooksRouteConfig>(
+export function registerPostUpload<Meta = any>(providerName: string, profileName: string, fn: PostUploadHookFunction<Meta, UploadHookResponse>) {
+  fastify.post<FBFastifyRequest<UploadHookPayload>, UploadHooksRouteConfig>(
     `/upload/${providerName}/${profileName}/postUpload`,
     { config: { kind: 'upload-hook', hookName: 'postUpload', profileName, providerName } },
     async (request, reply) => {
