@@ -19,10 +19,8 @@
     "baseUrl": "./",
     "rootDir": "./",
     "outDir": "./",
-    "paths": {
-      "generated/*": ["./generated/*"]
-    }
+    "types": ["./src/fastify.extends.d.ts"]
   },
-  "include": ["**/*.ts"],
+  "include": ["src/**/*.*"],
   "exclude": ["node_modules", "scripts"]
 }

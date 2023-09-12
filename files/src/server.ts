@@ -1,14 +1,15 @@
 import 'dotenv/config'
 
-// import { Headers } from '@whatwg-node/fetch'
 import closeWithGrace from 'close-with-grace'
 import Fastify from 'fastify'
-
-// import { type FireboomConfiguration, resolveConfigurationVariable } from './configuration'
+import { glob } from 'fast-glob'
+import { resolve } from 'node:path'
 import logger from './logger'
 import { HookServerConfiguration } from './hook.config'
+import { FBFastifyInterface, FireboomHooksPlugun, HooksRouteConfig } from './hooks'
+import { BaseRequestBody } from './types/server'
+import { FireboomHealthPlugun } from './health'
 // import { FastifyRequestBody } from './types/types'
-
 
 export async function startServer(config: HookServerConfiguration) {
   logger.level = config.logLevel || 'info'
@@ -37,8 +38,44 @@ export async function startServer(config: HookServerConfiguration) {
     done()
   })
 
-  await fastify.register(async _fastify => {
-    //
+  fastify.decorateRequest('ctx', null);
+
+  // health
+  fastify.register(FireboomHealthPlugun)
+
+  fastify.addHook('onRoute', (routeOptions) => {
+    const routeConfig = routeOptions.config as HooksRouteConfig | undefined;
+    if (routeConfig?.kind === 'hook') {
+      if (routeConfig.operationName) {
+        fastify.log.debug(
+          `Registered Operation Hook '${routeConfig.operationName}' with (${routeOptions.method}) '${routeOptions.url}'`
+        );
+      } else {
+        fastify.log.debug(`Registered Global Hook (${routeOptions.method}) '${routeOptions.url}'`);
+      }
+    }
+  });
+
+  await fastify.register(async fastify => {
+    fastify.addHook<FBFastifyInterface<BaseRequestBody, any>>('preHandler', async (req, reply) => {
+      // @ts-ignore
+      req.ctx = {
+        logger,
+        user: req.body.__wg.user!,
+        clientRequest: req.body.__wg.clientRequest,
+        // TODO
+        operationClient: ''
+      };
+    });
+
+    // hooks
+    await fastify.register(FireboomHooksPlugun)
+
+    // auto require all hook functions
+    const entries = await glob(resolve(__dirname, `./{customize,global,operation,storage,proxy}/**/*.${process.env.NODE_ENV === 'production' ? 'js' : 'ts'}`))
+    for (const entry of entries) {
+      require(entry)
+    }
   })
 
   // graceful shutdown
@@ -52,35 +89,11 @@ export async function startServer(config: HookServerConfiguration) {
 
   // start listen
   fastify.listen(config.listen, (err, address) => {
-      if (err) {
-        logger.error('Error when start Fireboom hook server', err)
-      } else {
-        logger.info(`Fireboom hook server is listening on: ${address}`)
-      }
+    if (err) {
+      logger.error('Error when start Fireboom hook server', err)
+    } else {
+      logger.info(`Fireboom hook server is listening on: ${address}`)
     }
+  }
   )
 }
-
-// /**
-//  * createClientRequest returns a decoded client request, used for passing it to user code
-//  * @param body Request body
-//  * @returns Decoded client request
-//  */
-// export const createClientRequest = (body: FastifyRequestBody) => {
-//   // clientRequest represents the original client request that was sent initially to the WunderNode.
-//   const raw = rawClientRequest(body)
-//   return {
-//     headers: new Headers(raw?.headers),
-//     requestURI: raw?.requestURI || '',
-//     method: raw?.method || 'GET'
-//   }
-// }
-
-// /**
-//  * rawClientRequest returns the raw JSON encoded client request
-//  * @param body Request body
-//  * @returns Client request as raw JSON, as received in the request body
-//  */
-// export const rawClientRequest = (body: FastifyRequestBody) => {
-//   return body.__wg.clientRequest
-// }

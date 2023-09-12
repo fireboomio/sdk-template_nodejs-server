@@ -1,11 +1,13 @@
-import fastify from 'fastify'
-
-import { ClientRequest, FireboomUser } from './types'
+// import fastify from 'fastify'
+import { Logger } from 'pino'
+import type { User, WunderGraphRequest } from './types/server'
 declare module 'fastify' {
   export interface FastifyRequest {
     ctx: {
-      user?: FireboomUser
-      clientRequest: ClientRequest
+      user: User,
+      logger: Logger,
+      clientRequest: WunderGraphRequest
+      operationClient: any
     }
   }
 }
