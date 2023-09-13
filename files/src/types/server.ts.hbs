@@ -1,7 +1,7 @@
 {{#each serverObjectFieldArray}}
 export type {{upperFirst (joinString '_' documentPath)}} = {{#if fields}}{
   {{#each fields}}
-  {{name}}{{#unless required}}?{{/unless}}: {{> field_type this=this }}
+  {{name}}{{#unless required}}?{{/unless}}: {{> field_type this=this upFirst=true }}
   {{/each}}
 }{{/if}}
 {{~#if additional}}{{#equal typeName 'object'}}Record<string, {{/equal}}{{#with additional}}{{> field_type this=this }}{{/with}}{{#equal typeName 'object'}}>{{else}}[]{{/equal}}{{/if}}

@@ -4,14 +4,15 @@ import closeWithGrace from 'close-with-grace'
 import Fastify from 'fastify'
 import { glob } from 'fast-glob'
 import { resolve } from 'node:path'
+import { Client } from '@fireboom/client'
+
 import logger from './logger'
 import { HookServerConfiguration } from './hook.config'
-import { FBFastifyInterface, FireboomHooksPlugun, HooksRouteConfig } from './hooks'
+import { FBFastifyRequest, FireboomHooksPlugun, HooksRouteConfig } from './hooks'
 import { BaseRequestBody } from './types/server'
 import { FireboomHealthPlugun } from './health'
-// import { FastifyRequestBody } from './types/types'
 
-export async function startServer(config: HookServerConfiguration) {
+export async function startServer(config: HookServerConfiguration, operationsClient: Client) {
   logger.level = config.logLevel || 'info'
   let id = 0
   const fastify = Fastify({
@@ -57,14 +58,13 @@ export async function startServer(config: HookServerConfiguration) {
   });
 
   await fastify.register(async fastify => {
-    fastify.addHook<FBFastifyInterface<BaseRequestBody, any>>('preHandler', async (req, reply) => {
+    fastify.addHook<FBFastifyRequest<BaseRequestBody, any>>('preHandler', async (req, reply) => {
       // @ts-ignore
       req.ctx = {
         logger,
         user: req.body.__wg.user!,
         clientRequest: req.body.__wg.clientRequest,
-        // TODO
-        operationClient: ''
+        operationsClient: operationsClient
       };
     });
 

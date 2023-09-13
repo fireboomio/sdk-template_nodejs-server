@@ -1,5 +1,5 @@
 {{~#if typeRefObject~}}
-  {{~upperFirst (joinString '_' typeRefObject.documentPath)~}}
+  {{#if upFirst}}{{~upperFirst (joinString '_' typeRefObject.documentPath)~}}{{else}}{{joinString '_' typeRefObject.documentPath~}}{{/if}}
 {{~else~}}
     {{~#if typeRefEnum~}}
         {{~upperFirst typeRefEnum.name~}}

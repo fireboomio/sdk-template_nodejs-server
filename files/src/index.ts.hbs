@@ -1,0 +1,60 @@
+import fetch from '@web-std/fetch'
+import { hookServerConfiguration } from './hook.config'
+import type { {{> operation_partial operations=operations includeInternal=false includeInject=false includeResponseData=true}} } from './models'
+import { InternalOperationsDefinition, OperationsClient } from './operations.client'
+import { startServer } from './server'
+
+export type Queries = {
+  {{#each operations}}
+  {{#if isQuery~}}
+  '{{name}}': {
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    response: {{name}}Response
+  }
+  {{~/if}}
+  {{/each}}
+}
+
+export type Mutations = {
+  {{#each operations}}
+  {{#if isMutation~}}
+  '{{name}}': {
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    response: {{name}}Response
+  }
+  {{~/if}}
+  {{/each}}
+}
+
+export type Subscriptions = {
+  {{#each operations}}
+  {{#if isSubscription~}}
+  '{{name}}': {
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    response: {{name}}Response
+  }
+  {{~/if}}
+  {{/each}}
+}
+
+export type LiveQueries = {
+  {{#each operations}}
+  {{#if (isAllTrue isQuery isLiveQuery)~}}
+  '{{name}}': {
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    response: {{name}}Response
+  }
+  {{~/if}}
+  {{/each}}
+}
+
+export type FireboomOperationsDefinition = InternalOperationsDefinition<Queries, Mutations, Subscriptions>
+
+const operationsClient = new OperationsClient({
+  baseURL: hookServerConfiguration.apiBaseURL + (hookServerConfiguration.apiBaseURL.endsWith('/') ? 'internal' : '/internal'),
+  csrfEnabled: false,
+  customFetch: fetch,
+  requestTimeoutMs: 3000
+})
+
+startServer(hookServerConfiguration, operationsClient)
