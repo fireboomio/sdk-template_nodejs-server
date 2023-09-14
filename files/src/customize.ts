@@ -13,8 +13,8 @@ import { Endpoint } from "./types/server";
 import { replaceUrl } from "./utils";
 import { BaseReuqestContext } from "./types";
 
-interface FireboomExecutionContext {
-  ctx: BaseReuqestContext
+export interface FireboomExecutionContext {
+  fireboomContext: BaseReuqestContext
 }
 
 export interface GraphQLServerConfig {
@@ -41,6 +41,7 @@ export async function registerCustomizeGraphQL(name: string, config: GraphQLServ
   fastify.route({
     method: ['GET', 'POST'],
     url: routeUrl,
+    config: { kind: 'customize', customizeName: name },
     async handler(req, reply) {
       const request = {
         body: req.body,
@@ -64,12 +65,12 @@ export async function registerCustomizeGraphQL(name: string, config: GraphQLServ
         // No fastify hooks are called for the response.
         reply.hijack();
 
-        const { query, variables } = getGraphQLParameters(request);
+        const { operationName, query, variables } = getGraphQLParameters(request);
 
         if (config.contextFactory) {
           await config.contextFactory(async (ctx) => {
             const result = await processRequest<FireboomExecutionContext>({
-              operationName: name,
+              operationName,
               query,
               variables,
               request,
@@ -79,7 +80,7 @@ export async function registerCustomizeGraphQL(name: string, config: GraphQLServ
               contextFactory: (): FireboomExecutionContext => ({
                 ...baseContext,
                 ...ctx,
-                ctx: req.ctx,
+                fireboomContext: req.ctx,
               }),
             });
 
@@ -89,7 +90,7 @@ export async function registerCustomizeGraphQL(name: string, config: GraphQLServ
         }
 
         const result = await processRequest<FireboomExecutionContext>({
-          operationName: name,
+          operationName,
           query,
           variables,
           request,
@@ -98,7 +99,7 @@ export async function registerCustomizeGraphQL(name: string, config: GraphQLServ
           rootValueFactory: config.customResolverFactory,
           contextFactory: (): FireboomExecutionContext => ({
             ...baseContext,
-            ctx: req.ctx,
+            fireboomContext: req.ctx,
           }),
         });
 
@@ -109,7 +110,7 @@ export async function registerCustomizeGraphQL(name: string, config: GraphQLServ
   customizeNameList.push(name)
 }
 
-export const FireboomCustomizesPlugun: FastifyPluginAsync = async (_fastify) => {
+export const FireboomCustomizesPlugin: FastifyPluginAsync = async (_fastify) => {
   fastify = _fastify
   customizeNameList = []
 }

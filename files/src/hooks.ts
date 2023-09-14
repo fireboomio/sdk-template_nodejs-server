@@ -423,6 +423,6 @@ export function registerPostUpload<Meta = any>(providerName: string, profileName
     })
 }
 
-export const FireboomHooksPlugun: FastifyPluginAsync = async (_fastify) => {
+export const FireboomHooksPlugin: FastifyPluginAsync = async (_fastify) => {
   fastify = _fastify
 }

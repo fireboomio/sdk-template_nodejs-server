@@ -6,7 +6,7 @@ import { getproxyNameList } from "./proxy"
 
 const startTime = new Date().toISOString()
 
-export const FireboomHealthPlugun: FastifyPluginAsync = async (fastify) => {
+export const FireboomHealthPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Reply: Health }>(Endpoint.Health, async (request, reply) => {
     return {
       status: 'ok',

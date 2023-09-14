@@ -8,13 +8,13 @@ import { resolve } from 'node:path'
 
 import logger from './logger'
 import { HookServerConfiguration } from './hook.config'
-import { FBFastifyRequest, FireboomHooksPlugun, HooksRouteConfig } from './hooks'
+import { FBFastifyRequest, FireboomHooksPlugin, HooksRouteConfig } from './hooks'
 import { BaseRequestBody } from './types/server'
-import { FireboomHealthPlugun } from './health'
+import { FireboomHealthPlugin } from './health'
 import { OperationsClient } from './operations.client'
-import { FireboomCustomizesPlugun } from './customize'
-import { FireboomProxiesPlugun } from './proxy'
-import { FireboomFunctionsPlugun } from './function'
+import { FireboomCustomizesPlugin } from './customize'
+import { FireboomProxiesPlugin } from './proxy'
+import { FireboomFunctionsPlugin } from './function'
 
 export async function startServer(config: HookServerConfiguration) {
   logger.level = config.logLevel || 'info'
@@ -47,7 +47,7 @@ export async function startServer(config: HookServerConfiguration) {
   fastify.decorateRequest('ctx', null);
 
   // health
-  fastify.register(FireboomHealthPlugun)
+  fastify.register(FireboomHealthPlugin)
 
   fastify.addHook('onRoute', (routeOptions) => {
     const routeConfig = routeOptions.config as HooksRouteConfig | undefined;
@@ -64,7 +64,7 @@ export async function startServer(config: HookServerConfiguration) {
 
   await fastify.register(async fastify => {
     fastify.addHook<FBFastifyRequest<BaseRequestBody, any>>('preHandler', async (req, reply) => {
-      const clientRequest = req.body.__wg.clientRequest
+      const clientRequest = req.body?.__wg?.clientRequest
 
       // client to call fireboom operations
       const operationsClient = new OperationsClient({
@@ -76,26 +76,26 @@ export async function startServer(config: HookServerConfiguration) {
 
       req.ctx = {
         logger,
-        user: req.body.__wg.user!,
+        user: req.body?.__wg?.user!,
         clientRequest,
         operationsClient
       };
     });
 
     // hooks
-    await fastify.register(FireboomHooksPlugun)
+    await fastify.register(FireboomHooksPlugin)
 
     // customize
-    await fastify.register(FireboomCustomizesPlugun)
+    await fastify.register(FireboomCustomizesPlugin)
 
     // proxy
-    await fastify.register(FireboomProxiesPlugun)
+    await fastify.register(FireboomProxiesPlugin)
 
     // functions
-    await fastify.register(FireboomFunctionsPlugun)
+    await fastify.register(FireboomFunctionsPlugin)
 
     // auto require all hook functions
-    const entries = await glob(resolve(__dirname, `./{customize,global,operation,storage,proxy}/**/*.${process.env.NODE_ENV === 'production' ? 'js' : 'ts'}`))
+    const entries = await glob(resolve(__dirname, `./{customize,function,global,operation,storage,proxy}/**/*.${process.env.NODE_ENV === 'production' ? 'js' : 'ts'}`))
     for (const entry of entries) {
       require(entry)
     }
