@@ -1,14 +1,17 @@
 {{#each operations~}}
-    {{~#if (equalAny engine 2)}}
-    {{else}}
+  {{~#if (equalAny engine 2)}}
+  {{else}}
     {{~#if hasInput~}}
-        {{name}}Input,
+      {{name}}Input,
     {{~/if~}}
-    {{~#if (isAllTrue hasInternalInput includeInternal)~}}
-        {{name}}InternalInput,
-    {{~/if~}}
-    {{~#if includeResponseData~}}
-        {{name}}ResponseData,
-    {{~/if~}}
-    {{/if}}
+  {{~#if (isAllTrue hasInternalInput includeInternal)~}}
+    {{name}}InternalInput,
+  {{~/if~}}
+  {{~#if includeResponse~}}
+    {{name}}Response,
+  {{~/if~}}
+  {{~#if includeResponseData~}}
+    {{name}}ResponseData,
+  {{~/if~}}
+  {{/if}}
 {{~/each}}

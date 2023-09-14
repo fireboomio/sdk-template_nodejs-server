@@ -1,18 +1,19 @@
 import 'dotenv/config'
 
+import fetch from '@web-std/fetch'
 import closeWithGrace from 'close-with-grace'
 import Fastify from 'fastify'
 import { glob } from 'fast-glob'
 import { resolve } from 'node:path'
-import { Client } from '@fireboom/client'
 
 import logger from './logger'
 import { HookServerConfiguration } from './hook.config'
 import { FBFastifyRequest, FireboomHooksPlugun, HooksRouteConfig } from './hooks'
 import { BaseRequestBody } from './types/server'
 import { FireboomHealthPlugun } from './health'
+import { OperationsClient } from './operations.client'
 
-export async function startServer(config: HookServerConfiguration, operationsClient: Client) {
+export async function startServer(config: HookServerConfiguration) {
   logger.level = config.logLevel || 'info'
   let id = 0
   const fastify = Fastify({
@@ -25,6 +26,7 @@ export async function startServer(config: HookServerConfiguration, operationsCli
       return `${++id}`
     }
   })
+  fastify.log.level = 'silent'
 
   fastify.addHook('onRequest', (req, _reply, done) => {
     req.log.debug({ req }, 'received request')
@@ -59,12 +61,21 @@ export async function startServer(config: HookServerConfiguration, operationsCli
 
   await fastify.register(async fastify => {
     fastify.addHook<FBFastifyRequest<BaseRequestBody, any>>('preHandler', async (req, reply) => {
-      // @ts-ignore
+      const clientRequest = req.body.__wg.clientRequest
+
+      // client to call fireboom operations
+      const operationsClient = new OperationsClient({
+        baseURL: config.apiBaseURL,
+        customFetch: fetch,
+        requestTimeoutMs: 3000,
+        clientRequest
+      })
+
       req.ctx = {
         logger,
         user: req.body.__wg.user!,
-        clientRequest: req.body.__wg.clientRequest,
-        operationsClient: operationsClient
+        clientRequest,
+        operationsClient
       };
     });
 

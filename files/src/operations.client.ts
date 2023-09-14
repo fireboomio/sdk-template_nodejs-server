@@ -1,4 +1,5 @@
-import { Client, type ClientResponse, type OperationRequestOptions, type SubscriptionRequestOptions } from '@fireboom/client'
+import { Client, type ClientConfig, type ClientResponse, type OperationRequestOptions, type SubscriptionRequestOptions } from '@fireboom/client'
+import { WunderGraphRequest } from './types/server';
 
 export type InternalOperation<Data = any> = {
   input?: object;
@@ -19,7 +20,30 @@ export type InternalOperationsDefinition<
   subscriptions: Subscriptions;
 };
 
+export interface OperationsClientConfig extends Omit<ClientConfig, 'csrfEnabled'> {
+	/**
+	 * raw JSON encoded client request
+	 */
+	clientRequest: WunderGraphRequest;
+}
+
 export class OperationsClient<Operations extends InternalOperationsDefinition = InternalOperationsDefinition> extends Client {
+  protected readonly csrfEnabled = false;
+	protected readonly clientRequest: WunderGraphRequest;
+
+  constructor(options: OperationsClientConfig) {
+		const { clientRequest, ...rest } = options;
+
+		super({ ...rest });
+
+		this.clientRequest = clientRequest;
+		Object.assign(this.baseHeaders, forwardedHeaders(clientRequest));
+	}
+
+  protected operationUrl(operationName: string) {
+		return this.options.baseURL + '/internal/operations/' + operationName;
+	}
+
   query<
     OperationName extends Extract<keyof Operations['queries'], string>,
     Input extends Operations['queries'][OperationName]['input'] = Operations['queries'][OperationName]['input'],
@@ -47,3 +71,23 @@ export class OperationsClient<Operations extends InternalOperationsDefinition = 
     return super.subscribe(options);
   }
 }
+
+/**
+ * Returns the headers that should be forwarded from the ClientRequest as headers
+ * in the next request sent to the node
+ * @param request A ClientRequest
+ * @returns A record with the headers where keys are the names and values are the header values
+ */
+export const forwardedHeaders = (request: WunderGraphRequest) => {
+	const forwardedHeaders = ['Authorization', 'X-Request-Id'];
+	const headers: Record<string, string> = {};
+	if (request?.headers) {
+		for (const header of forwardedHeaders) {
+			const value = request.headers[header];
+			if (value) {
+				headers[header] = value;
+			}
+		}
+	}
+	return headers;
+};
