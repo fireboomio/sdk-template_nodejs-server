@@ -1,5 +1,5 @@
 import { Client, type ClientConfig, type ClientResponse, type OperationRequestOptions, type SubscriptionRequestOptions } from '@fireboom/client'
-import { WunderGraphRequest } from './types/server';
+import { Endpoint, WunderGraphRequest } from './types/server';
 
 export type InternalOperation<Data = any> = {
   input?: object;
@@ -34,14 +34,14 @@ export class OperationsClient<Operations extends InternalOperationsDefinition = 
   constructor(options: OperationsClientConfig) {
 		const { clientRequest, ...rest } = options;
 
-		super({ ...rest });
+		super({ ...rest, forceMethod: 'POST' });
 
 		this.clientRequest = clientRequest;
 		Object.assign(this.baseHeaders, forwardedHeaders(clientRequest));
 	}
 
   protected operationUrl(operationName: string) {
-		return this.options.baseURL + '/internal/operations/' + operationName;
+		return this.options.baseURL + Endpoint._internalRequest.replace('{path}', operationName);
 	}
 
   query<

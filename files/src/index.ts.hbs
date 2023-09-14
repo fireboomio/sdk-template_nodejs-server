@@ -1,12 +1,12 @@
 import { hookServerConfiguration } from './hook.config'
-import type { AResponse,DResponse,T__aInput,T__aResponse,T__bResponse, } from './models'
+import type { {{> operation_partial operations=operations includeInternal=true includeResponse=true includeInput=false }} } from './models'
 import { InternalOperationsDefinition } from './operations.client'
 import { startServer } from './server'
 
 export type Queries = {
   {{~#each operations}}{{#if isQuery}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
     response: {{name}}Response
   }{{#unless @last}},{{/unless}}{{/if}}
   {{~/each}}
@@ -16,7 +16,7 @@ export type Queries = {
 export type Mutations = {
   {{~#each operations}}{{#if isMutation}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
     response: {{name}}Response
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
@@ -26,7 +26,7 @@ export type Mutations = {
 export type Subscriptions = {
   {{~#each operations}}{{#if isSubscription}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
     response: {{name}}Response
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
@@ -36,7 +36,7 @@ export type Subscriptions = {
 export type LiveQueries = {
   {{~#each operations}}{{#if (isAllTrue isQuery isLiveQuery)}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}Input{{else}}undefined{{/if}}
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
     response: {{name}}Response
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
