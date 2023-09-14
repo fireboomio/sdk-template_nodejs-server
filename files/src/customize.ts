@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify"
 
-import { GraphQLSchema } from 'graphql';
+import { GraphQLSchema, printIntrospectionSchema } from 'graphql';
 import {
   getGraphQLParameters,
   processRequest,
@@ -9,9 +9,10 @@ import {
   shouldRenderGraphiQL,
   type ExecutionContext as HelixExecutionContext,
 } from 'graphql-helix';
-import { Endpoint } from "./types/server";
+import { Endpoint, HookParent } from "./types/server";
 import { replaceUrl } from "./utils";
 import { BaseReuqestContext } from "./types";
+import { saveOperationConfig } from "./operation.json";
 
 export interface FireboomExecutionContext {
   fireboomContext: BaseReuqestContext
@@ -64,49 +65,53 @@ export async function registerCustomizeGraphQL(name: string, config: GraphQLServ
         // We hand over the response handling to "graphql-helix"
         // No fastify hooks are called for the response.
         reply.hijack();
-
-        const { operationName, query, variables } = getGraphQLParameters(request);
-
-        if (config.contextFactory) {
-          await config.contextFactory(async (ctx) => {
-            const result = await processRequest<FireboomExecutionContext>({
-              operationName,
-              query,
-              variables,
-              request,
-              schema,
-              // @ts-ignore
-              rootValueFactory: config.customResolverFactory,
-              contextFactory: (): FireboomExecutionContext => ({
-                ...baseContext,
-                ...ctx,
-                fireboomContext: req.ctx,
-              }),
+        try {
+          const { operationName, query, variables } = getGraphQLParameters(request);
+  
+          if (config.contextFactory) {
+            await config.contextFactory(async (ctx) => {
+              const result = await processRequest<FireboomExecutionContext>({
+                operationName,
+                query,
+                variables,
+                request,
+                schema,
+                // @ts-ignore
+                rootValueFactory: config.customResolverFactory,
+                contextFactory: (): FireboomExecutionContext => ({
+                  ...baseContext,
+                  ...ctx,
+                  fireboomContext: req.ctx,
+                }),
+              });
+  
+              await sendResult(result, reply.raw);
             });
-
-            await sendResult(result, reply.raw);
+            return;
+          }
+  
+          const result = await processRequest<FireboomExecutionContext>({
+            operationName,
+            query,
+            variables,
+            request,
+            schema,
+            // @ts-ignore
+            rootValueFactory: config.customResolverFactory,
+            contextFactory: (): FireboomExecutionContext => ({
+              ...baseContext,
+              fireboomContext: req.ctx,
+            }),
           });
-          return;
+  
+          await sendResult(result, reply.raw);
+        } catch (error) {
+          reply.code(500).send(error);
         }
-
-        const result = await processRequest<FireboomExecutionContext>({
-          operationName,
-          query,
-          variables,
-          request,
-          schema,
-          // @ts-ignore
-          rootValueFactory: config.customResolverFactory,
-          contextFactory: (): FireboomExecutionContext => ({
-            ...baseContext,
-            fireboomContext: req.ctx,
-          }),
-        });
-
-        await sendResult(result, reply.raw);
       }
     },
   });
+  saveOperationConfig(HookParent.Customize, name, printIntrospectionSchema(schema))
   customizeNameList.push(name)
 }
 

@@ -1,8 +1,9 @@
 import { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify"
 
-import { Endpoint } from "./types/server";
+import { Endpoint, HookParent, OperationExecutionEngine } from "./types/server";
 import { BaseReuqestContext, Request } from "./types";
 import { replaceUrl } from "./utils";
+import { saveOperationConfig } from "./operation.json";
 
 export interface ProxyConfig {
 	handler: (req: Request, ctx: BaseReuqestContext, reply: FastifyReply ) => Promise<void>
@@ -25,9 +26,14 @@ export async function registerProxyHandler(path: string, config: ProxyConfig) {
         method: req.method,
         query: req.query,
       };
-      await config.handler(request, req.ctx, reply)
+      try {
+        await config.handler(request, req.ctx, reply)
+      } catch (error) {
+        reply.code(500).send(error)
+      }
     }
   })
+  saveOperationConfig(HookParent.Proxy, path, { engine: OperationExecutionEngine.ENGINE_PROXY })
   proxyNameList.push(path)
 }
 
