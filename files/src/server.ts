@@ -12,6 +12,9 @@ import { FBFastifyRequest, FireboomHooksPlugun, HooksRouteConfig } from './hooks
 import { BaseRequestBody } from './types/server'
 import { FireboomHealthPlugun } from './health'
 import { OperationsClient } from './operations.client'
+import { FireboomCustomizesPlugun } from './customize'
+import { FireboomProxiesPlugun } from './proxy'
+import { FireboomFunctionsPlugun } from './function'
 
 export async function startServer(config: HookServerConfiguration) {
   logger.level = config.logLevel || 'info'
@@ -81,6 +84,15 @@ export async function startServer(config: HookServerConfiguration) {
 
     // hooks
     await fastify.register(FireboomHooksPlugun)
+
+    // customize
+    await fastify.register(FireboomCustomizesPlugun)
+
+    // proxy
+    await fastify.register(FireboomProxiesPlugun)
+
+    // functions
+    await fastify.register(FireboomFunctionsPlugun)
 
     // auto require all hook functions
     const entries = await glob(resolve(__dirname, `./{customize,global,operation,storage,proxy}/**/*.${process.env.NODE_ENV === 'production' ? 'js' : 'ts'}`))

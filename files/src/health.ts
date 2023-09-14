@@ -1,17 +1,19 @@
 import { FastifyPluginAsync } from "fastify"
-import { Health } from "./types/server"
+import { Endpoint, Health } from "./types/server"
+import { getCustomizeNameList } from "./customize"
+import { getFunctionNameList } from "./function"
+import { getproxyNameList } from "./proxy"
 
 const startTime = new Date().toISOString()
 
 export const FireboomHealthPlugun: FastifyPluginAsync = async (fastify) => {
-  fastify.get<{ Reply: Health }>('/health', async (request, reply) => {
+  fastify.get<{ Reply: Health }>(Endpoint.Health, async (request, reply) => {
     return {
       status: 'ok',
       report: {
-        // TODO
-        customizes: ['freetalk'],
-        functions: ['a/b/c'],
-        proxys: ['a/b/c'],
+        customizes: getCustomizeNameList(),
+        functions: getFunctionNameList(),
+        proxys: getproxyNameList(),
         time: startTime
       }
     }
