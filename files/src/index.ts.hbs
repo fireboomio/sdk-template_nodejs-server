@@ -1,7 +1,6 @@
+import { type InternalOperationsDefinition, startServer } from '@fireboom/server'
 import { hookServerConfiguration } from './hook.config'
 import type { {{> operation_partial operations=operations includeInternal=true includeResponse=true includeInput=false }} } from './models'
-import { InternalOperationsDefinition } from './operations.client'
-import { startServer } from './server'
 
 export type Queries = {
   {{~#each operations}}{{#if isQuery}}

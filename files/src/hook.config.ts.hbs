@@ -1,12 +1,4 @@
-export type HookServerConfiguration = {
-  listen: {
-    host: string
-    port: number
-  }
-  logLevel: string
-  apiBaseURL: string
-  envFilePath: string
-}
+import type { HookServerConfiguration } from '@fireboom/server'
 
 export const hookServerConfiguration: HookServerConfiguration = {
   listen: {
