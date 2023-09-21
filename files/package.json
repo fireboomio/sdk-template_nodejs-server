@@ -6,11 +6,11 @@
   },
   "scripts": {
     "dev": "ts-node index.ts",
-    "build": "rm -rf **/*.js **/*.d.ts && tsc ",
+    "build": "rm -rf **/*.js **/*.d.ts && tsc",
     "start": "node index.js"
   },
   "dependencies": {
-    "@fireboom/server": "^0.1.3"
+    "@fireboom/server": "^0.1.4"
   },
   "devDependencies": {
     "@types/node": "16",
