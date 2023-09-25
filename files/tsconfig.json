@@ -15,7 +15,10 @@
     "isolatedModules": true,
     "baseUrl": "./",
     "rootDir": "./",
-    "outDir": "./"
+    "outDir": "./",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "exclude": ["node_modules", "scripts"]
 }

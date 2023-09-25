@@ -7,10 +7,11 @@
   "scripts": {
     "dev": "ts-node index.ts",
     "build": "rm -rf **/*.js **/*.d.ts && tsc && tsc-alias",
-    "start": "node index.js"
+    "start": "cross-env NODE_ENV=production node index.js"
   },
   "dependencies": {
-    "@fireboom/server": "^0.1.6"
+    "@fireboom/server": "^0.1.6",
+    "cross-env": "^7.0.3"
   },
   "devDependencies": {
     "@types/node": "16",

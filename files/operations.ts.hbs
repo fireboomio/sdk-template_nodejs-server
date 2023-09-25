@@ -1,4 +1,4 @@
-import { type InternalOperationsDefinition, type BaseReuqestContext } from '@fireboom/server'
+import { type InternalOperationsDefinition, type BaseRequestContext } from '@fireboom/server'
 import type { {{> operation_partial operations=operations includeInternal=true includeResponse=true includeInput=false }} } from './models'
 
 export type Queries = {
@@ -43,4 +43,4 @@ export type LiveQueries = {
 
 export type FireboomOperationsDefinition = InternalOperationsDefinition<Queries, Mutations, Subscriptions>
 
-export type FireboomRequestContext = BaseReuqestContext<FireboomOperationsDefinition>
+export type FireboomRequestContext = BaseRequestContext<FireboomOperationsDefinition>
