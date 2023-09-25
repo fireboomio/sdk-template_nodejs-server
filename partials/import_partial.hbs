@@ -1,0 +1,9 @@
+{{#each operations~}}
+  {{~#if hasInternalInput~}}
+    {{name}}InternalInput,
+  {{~/if~}}
+  {{~#if hasInput~}}
+    {{name}}Input,
+  {{~/if~}}
+  {{name}}Response,
+{{~/each}}
