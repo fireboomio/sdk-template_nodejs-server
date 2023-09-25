@@ -6,15 +6,17 @@
   },
   "scripts": {
     "dev": "ts-node index.ts",
-    "build": "rm -rf **/*.js **/*.d.ts && tsc",
+    "build": "rm -rf **/*.js **/*.d.ts && tsc && tsc-alias",
     "start": "node index.js"
   },
   "dependencies": {
-    "@fireboom/server": "^0.1.4"
+    "@fireboom/server": "^0.1.6"
   },
   "devDependencies": {
     "@types/node": "16",
     "ts-node": "^10.9.1",
+    "tsc-alias": "^1.8.4",
+    "tsconfig-paths": "^4.1.2",
     "typescript": "^5.2.2"
   },
   "stackblitz": {
