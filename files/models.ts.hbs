@@ -1,8 +1,10 @@
 {{#each operations~}}
+{{~#unless (equalAny engine 2)}}
 export interface {{name}}Response {
   data?: {{name}}ResponseData
   errors?: ReadonlyArray<GraphQLError>;
 }
+{{/unless}}
 {{/each}}
 
 {{#each objectFieldArray}}
