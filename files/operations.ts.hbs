@@ -26,6 +26,7 @@ export type Subscriptions = {
   '{{name}}': {
     input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}{{#if hasInternalInput}}Internal{{/if}}Input{{else}}undefined{{/if}}
     response: {{#if (equalAny engine 2)}}any{{else}}{{name}}Response{{/if}}
+    {{#if isQuery}}liveQuery: true{{/if}}
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
 
@@ -36,6 +37,7 @@ export type LiveQueries = {
   '{{name}}': {
     input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}{{#if hasInternalInput}}Internal{{/if}}Input{{else}}undefined{{/if}}
     response: {{#if (equalAny engine 2)}}any{{else}}{{name}}Response{{/if}}
+    liveQuery: true
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
 
