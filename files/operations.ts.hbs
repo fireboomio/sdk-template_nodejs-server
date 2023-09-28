@@ -22,7 +22,7 @@ export type Mutations = {
 }
 
 export type Subscriptions = {
-  {{~#each operations}}{{#if isSubscription}}
+  {{~#each operations}}{{#if (isAnyTrue isSubscription (isAllTrue isQuery isLiveQuery))}}
   '{{name}}': {
     input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}{{#if hasInternalInput}}Internal{{/if}}Input{{else}}undefined{{/if}}
     response: {{#if (equalAny engine 2)}}any{{else}}{{name}}Response{{/if}}
