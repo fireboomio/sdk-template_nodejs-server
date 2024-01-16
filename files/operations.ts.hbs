@@ -1,11 +1,11 @@
 import { type InternalOperationsDefinition, type BaseRequestContext } from '@fireboom/server'
-import type { {{> operation_partial operations=operations includeInternal=true includeResponse=true includeInput=false }} } from './models'
+import type { {{> import_partial operations=operations }} } from './models'
 
 export type Queries = {
   {{~#each operations}}{{#if isQuery}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
-    response: {{name}}Response
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}{{#if hasInternalInput}}Internal{{/if}}Input{{else}}undefined{{/if}}
+    response: {{#if (equalAny engine 2)}}any{{else}}{{name}}Response{{/if}}
   }{{#unless @last}},{{/unless}}{{/if}}
   {{~/each}}
 
@@ -14,18 +14,19 @@ export type Queries = {
 export type Mutations = {
   {{~#each operations}}{{#if isMutation}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
-    response: {{name}}Response
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}{{#if hasInternalInput}}Internal{{/if}}Input{{else}}undefined{{/if}}
+    response: {{#if (equalAny engine 2)}}any{{else}}{{name}}Response{{/if}}
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
 
 }
 
 export type Subscriptions = {
-  {{~#each operations}}{{#if isSubscription}}
+  {{~#each operations}}{{#if (isAnyTrue isSubscription (isAllTrue isQuery isLiveQuery))}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
-    response: {{name}}Response
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}{{#if hasInternalInput}}Internal{{/if}}Input{{else}}undefined{{/if}}
+    response: {{#if (equalAny engine 2)}}any{{else}}{{name}}Response{{/if}}
+    {{#if isQuery}}liveQuery: true{{/if}}
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
 
@@ -34,8 +35,9 @@ export type Subscriptions = {
 export type LiveQueries = {
   {{~#each operations}}{{#if (isAllTrue isQuery isLiveQuery)}}
   '{{name}}': {
-    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}InternalInput{{else}}undefined{{/if}}
-    response: {{name}}Response
+    input{{#unless hasInput}}?{{/unless}}: {{#if hasInput}}{{name}}{{#if hasInternalInput}}Internal{{/if}}Input{{else}}undefined{{/if}}
+    response: {{#if (equalAny engine 2)}}any{{else}}{{name}}Response{{/if}}
+    liveQuery: true
   }{{#unless @last}},{{/unless}}{{~/if}}
   {{~/each}}
 

@@ -10,7 +10,7 @@
     "start": "cross-env NODE_ENV=production node index.js"
   },
   "dependencies": {
-    "@fireboom/server": "^0.1.6",
+    "@fireboom/server": "^0.1.7",
     "cross-env": "^7.0.3"
   },
   "devDependencies": {

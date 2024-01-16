@@ -1,0 +1,6 @@
+{{#each operations~}}
+  {{~#if hasInput~}}
+    {{name}}{{#if hasInternalInput}}Internal{{/if}}Input,
+  {{~/if~}}
+  {{#unless (equalAny engine 2)}}{{name}}Response,{{/unless}}
+{{~/each}}
